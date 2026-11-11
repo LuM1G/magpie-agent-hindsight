@@ -1,7 +1,7 @@
 {
   "name": "magpie-agent-hindsight",
   "version": "0.1.1",
-  "description": "非官方社区插件：把 Hindsight 的 AI 对话与日报/周报接入 Magpie。Unofficial community plugin for Hindsight.",
+  "description": "非官方社区插件：把 Hindsight 的 AI 对话与日报/周报接入 Magpie。",
   "type": "module",
   "main": "./index.mjs",
   "files": [
@@ -10,6 +10,7 @@
     "lib",
     "icon.png",
     "README.md",
+    "README.en.md",
     "LICENSE",
     "LICENSE-GPL-3.0.txt",
     "THIRD_PARTY_NOTICES.md"

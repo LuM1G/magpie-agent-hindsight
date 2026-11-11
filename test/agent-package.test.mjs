@@ -49,15 +49,17 @@ test("package metadata points Magpie and Bun at the right entry points", () => {
   assert.equal(pkg.main, "./index.mjs")
   assert.equal(pkg.magpie.agent, "./hindsight.agent.js")
   assert.ok(pkg.files.includes("icon.png"))
+  assert.ok(pkg.files.includes("README.en.md"))
   assert.ok(pkg.files.includes("LICENSE-GPL-3.0.txt"))
 })
 
-test("README is Chinese-first and documents the GitHub install", () => {
+test("README language files are split and cross-linked", () => {
   const readme = readFileSync(join(PACKAGE_DIR, "README.md"), "utf8")
-  const firstProse = readme
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .find((line) => line !== "" && !line.startsWith("#"))
-  assert.match(firstProse, /非官方社区插件/)
+  const english = readFileSync(join(PACKAGE_DIR, "README.en.md"), "utf8")
+  assert.match(readme, /\*\*简体中文\*\*\s*\|\s*\[English\]\(README\.en\.md\)/)
+  assert.match(english, /\[简体中文\]\(README\.md\)\s*\|\s*\*\*English\*\*/)
+  assert.match(readme, /非官方社区插件/)
   assert.match(readme, /magpie plugin add github:/)
+  assert.match(english, /Unofficial community plugin/)
+  assert.match(english, /magpie plugin add github:/)
 })
