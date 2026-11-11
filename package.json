@@ -1,7 +1,7 @@
 {
   "name": "magpie-agent-hindsight",
-  "version": "0.1.0",
-  "description": "Unofficial community agent plugin that connects Hindsight AI chat and daily/weekly summaries to Magpie",
+  "version": "0.1.1",
+  "description": "非官方社区插件：把 Hindsight 的 AI 对话与日报/周报接入 Magpie。Unofficial community plugin for Hindsight.",
   "type": "module",
   "main": "./index.mjs",
   "files": [
@@ -26,6 +26,11 @@
     "test": "node --experimental-sqlite --test test/agent-package.test.mjs test/bridge.test.mjs test/integration.test.mjs test/paths-state.test.mjs test/settings.test.mjs"
   },
   "magpie": {
+    "name": "Hindsight",
+    "summary": {
+      "zh": "非官方社区插件：在 Magpie 中统一管理 Hindsight 的 AI 对话与日报/周报模型，并支持最多 10 份 Hindsight 模型档案。",
+      "en": "Unofficial community plugin that manages Hindsight AI chat and daily/weekly summary models through Magpie, with up to 10 Hindsight profiles."
+    },
     "agent": "./hindsight.agent.js"
   }
 }

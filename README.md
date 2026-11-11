@@ -1,149 +1,48 @@
 # magpie-agent-hindsight
 
-Unofficial community plugin that connects **Hindsight** to Magpie's Agents
-page. Choose Magpie models once; the plugin writes them into Hindsight's
-current-account SQLite settings, keeps the configuration in sync, and restores
-the previous AI settings when disconnected.
+非官方社区插件：把 **Hindsight（后知后觉）** 接入 Magpie 的 Agents 页。你只需在 Magpie 中勾选模型，插件会把配置写入 Hindsight 当前账号的 SQLite 设置，并在连接期间保持同步；断开时恢复原来的 AI 设置。
 
-**This is not an official Hindsight or Magpie plugin.** Hindsight's name and
-icon are used only to identify compatibility. See
-[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
+> 本插件不是 Hindsight 或 Magpie 官方作品。Hindsight 的名称和图标仅用于说明兼容对象，详见 [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md)。
 
-## What it connects
+## 接管范围
 
-Hindsight has three separate AI paths:
+插件会接管 Hindsight 的三条云端路径中的两条：
 
-| Path | Managed by this plugin? | How |
+| 路径 | 是否接管 | 写入值 |
 | --- | --- | --- |
-| AI chat | Yes | `chatMain = "__cloud__"` |
-| Daily/weekly summaries | Yes | `summaryMain = "__cloud__"` |
-| OCR, embeddings, local vision | No | Uses local models/services |
+| AI 对话 | 是 | `chatMain = "__cloud__"` |
+| 日报/周报 | 是 | `summaryMain = "__cloud__"` |
+| OCR、embedding、本地视觉 | 否 | 保持用户原有本地配置 |
 
-Connecting **does not add a partial mode**. It deliberately takes over both AI
-chat and summaries. `__cloud__` makes Hindsight use its configured external
-OpenAI-compatible endpoint, which in connected mode is Magpie. This consumes
-Magpie/upstream tokens whenever Hindsight chats or generates summaries.
+连接后没有“只接管对话”或“只接管总结”的独立开关，会同时接管 AI 对话和日报/周报。`__cloud__` 会让 Hindsight 使用当前外部 OpenAI 兼容端点，也就是 Magpie，因此对话和日报/周报都会消耗 Magpie 或上游 token。
 
-Magpie's Agent API does not currently expose a per-agent boolean option, so
-this plugin has no in-Agents-page scope switch. The complete takeover is
-intentional and is shown in the Agent notice.
+## 要求
 
-## Requirements
+- Magpie `0.1.3673`
+- Hindsight `0.11.4`
+- Windows、macOS 或 Linux
+- 所选模型支持 Hindsight 使用的 OpenAI 兼容聊天接口
+- Hindsight 的 AI 对话需要模型支持 OpenAI `tools` / function calling
 
-- Magpie `0.1.3487` (the version used for the bridge-format tests)
-- Hindsight `0.11.4` (the schema used for this release)
-- macOS, Windows, or Linux
-- The selected Magpie model must support the OpenAI-compatible chat API used
-  by Hindsight. Hindsight's chat agent also needs a model that accepts OpenAI
-  `tools` / function calling.
+插件使用 Magpie 自带的 Bun 运行时，没有 npm 运行时依赖。
 
-The plugin uses the Bun runtime bundled with Magpie. It has no npm runtime
-dependencies.
-
-## Install
-
-Push this package to a public GitHub repository, add the `magpie-plugin` topic
-so it can appear under Discover → Unofficial, and install it with:
+## 安装
 
 ```text
-magpie plugin add github:<owner>/<repo>
+magpie plugin add github:LuM1G/magpie-agent-hindsight
 ```
 
-You can also add a local checkout:
+安装后打开 **Agents → Hindsight**，勾选模型并连接。`0.1.1` 使用新的桥接路径，首次更新后需要重新连接一次。
+
+## 桥接与状态文件
+
+Magpie 写入：
 
 ```text
-magpie plugin add <path-to-checkout>
+~/.magpie-agent/hindsight/bridge.json
 ```
 
-After installing, open **Agents → Hindsight**, tick the models you want
-Hindsight to expose, and connect. Reconnect once after replacing an older
-`agent-hindsight` installation: bridge files without `schema: 1` are ignored.
-
-## How it writes Hindsight
-
-Hindsight stores all settings as one JSON object in the
-`settings_store` table (`id = 1`). The plugin:
-
-- Locates Hindsight's config root and data root using the same precedence as
-  Hindsight: `HINDSIGHT_DATA_DIR`, then `bootstrap.json.data_path`, then the
-  platform default.
-- Reads `active_user.json`, then targets only the current account's
-  `hindsight.<uid>.sqlite` (or `hindsight.sqlite` for anonymous use).
-- Uses `BEGIN IMMEDIATE`, `busy_timeout`, and bounded retries so writing while
-  Hindsight is running does not corrupt the settings row.
-- Preserves the entire Settings object and every AI field outside the ones it
-  manages.
-
-On Windows, the bootstrap file is:
-
-```text
-%APPDATA%\Hindsight\bootstrap.json
-```
-
-The key is `data_path` (snake_case). `dataPath` is ignored.
-
-## Models and profiles
-
-The first selected model is activated on connect. Up to 10 saved profiles are
-written as:
-
-```text
-Magpie · <model-id>
-```
-
-Hindsight's 10-profile limit includes profiles you created yourself. The
-plugin never evicts a user profile. If there are not enough free slots, it
-fills the available slots, still activates the first selected model, and logs
-the models it could not save.
-
-After connecting, switching to any other `Magpie · ...` profile in Hindsight
-is preserved by the 2-second drift check. Switching to a non-Magpie endpoint
-or model is treated as drift: while connected, the plugin reasserts its
-managed gateway and the first selected model. Disconnect first if you want to
-take full control of those fields.
-
-If you rename or edit a Magpie profile, it becomes yours. The plugin will not
-delete that profile on disconnect. Untouched plugin profiles are removed on
-disconnect.
-
-## Disconnect and restore
-
-The plugin snapshots the original active fields before its first write:
-
-- `externalEnabled`
-- `externalProvider`
-- `endpoint`
-- `model`
-- `apiKey`
-- `summaryMain`
-- `chatMain`
-
-On disconnect it restores only values that still look plugin-managed:
-
-- Active endpoint/key fields are restored only if they still point at the
-  plugin's gateway.
-- `summaryMain` and `chatMain` are restored only if they are still
-  `__cloud__`.
-- Plugin-created profiles are removed only if their fields exactly match the
-  plugin's last write. Renamed or edited profiles stay.
-
-After restoring, the Bun process stops reading the Hindsight database and
-account marker. It keeps only the bridge file watcher so a later Magpie
-connection can start a new session.
-
-The state file is:
-
-```text
-~/.hindsight/.magpie-agent.state.json
-```
-
-It contains the original API key and gateway key needed for restoration. It is
-created with user-only permissions where the platform supports POSIX modes.
-Do not share it. Logs never print either key.
-
-## Bridge file
-
-Magpie writes:
+格式为：
 
 ```json
 {
@@ -161,164 +60,49 @@ Magpie writes:
 }
 ```
 
-at:
+插件状态写入：
 
 ```text
-~/.hindsight/.magpie-agent.json
+~/.magpie-agent/hindsight/state.json
 ```
 
-Older agent examples used dotted keys; the parser accepts both `gateway.url`
-and a nested `gateway.url`. The model id may contain `/`; it is a display
-value, not a filename.
+状态文件包含恢复所需的原始 API key 和 gateway key，因此不要分享。日志不会输出这些密钥。不支持或已损坏的桥接不会触发数据库写入。
 
-## Account switching
+## 写入 Hindsight
 
-Only the account named by `active_user.json` is written at any one time. When
-Hindsight switches accounts, the plugin first restores the previous account's
-database, then applies the current Magpie selection to the new account. State
-is stored per UID.
+Hindsight 把所有设置保存在 SQLite 的 `settings_store` 表中，`id = 1` 的 `data` 是一整段 JSON。插件会：
 
-The memory database (`hindsight-memory.*.sqlite`) is never touched.
+- 按 `HINDSIGHT_DATA_DIR` → `bootstrap.json.data_path` → 平台默认目录的顺序定位数据根。
+- 读取 `active_user.json`，只操作当前账号的 `hindsight.<uid>.sqlite`；没有 UID 时使用 `hindsight.sqlite`。
+- 使用 `BEGIN IMMEDIATE`、`busy_timeout` 和有限重试，避免 Hindsight 正在写库时损坏设置。
+- 只修改 `settings_store` 的这一行，并完整保留 Settings 中的其他字段。
+- 不读取也不修改 `hindsight-memory.*.sqlite`。
 
-## Troubleshooting
-
-### Hindsight's settings page still shows old values
-
-Hindsight's frontend caches settings. The next chat or summary request reads
-the database, but the settings page may need a refresh or a Hindsight restart
-to redraw. The next AI request usually does not require a restart.
-
-### Chat returns 400 when thinking is enabled
-
-With a custom provider, Hindsight may inject `chat_template_kwargs`. Some
-upstreams reject that field. Set Hindsight's `chatThinking` to `auto` or
-`off`, or choose an upstream that accepts it.
-
-### Chat fails but summaries work
-
-The selected model may not support OpenAI tool/function calling. Pick a model
-with tool-call support in Magpie.
-
-### The plugin says it is waiting for a connection
-
-Check that Magpie actually connected Hindsight and that the bridge file exists
-at `~/.hindsight/.magpie-agent.json`. A bridge without `schema: 1` is an old
-lightweight-plugin file and is intentionally ignored; reconnect once.
-
-### Custom data directory is not found
-
-Set `HINDSIGHT_DATA_DIR` or put the custom path in
-`%APPDATA%\Hindsight\bootstrap.json` as `data_path`. The bridge remains in
-`~/.hindsight`; it is not inside the custom data directory.
-
-### More than one account database exists
-
-The plugin uses `active_user.json` rather than globbing all databases. If that
-file is missing or does not name the current account, it waits instead of
-guessing and risking a write to another account.
-
-## Limitations
-
-- Only Hindsight AI chat and daily/weekly summaries are managed.
-- Only the current account is active at one time.
-- No per-agent scope switch in v1.
-- Hindsight's settings schema is an application implementation detail. This
-  release targets `0.11.4`; a future Hindsight schema change may require a
-  plugin update.
-- The plugin cannot make an upstream model support tools or accept
-  `chat_template_kwargs`.
-- Hindsight's UI may show stale settings until refreshed or restarted.
-
-## Development
+Windows 的 bootstrap 文件位于：
 
 ```text
-npm test
-npm pack --dry-run
+%APPDATA%\Hindsight\bootstrap.json
 ```
 
-Development tests require Node.js 22.5+ and a Bun runtime. They use temporary
-databases and a temporary HOME/APPDATA tree, and never read or write the real
-`%APPDATA%\Hindsight` database. The integration tests auto-detect Bun on
-`PATH` or in Magpie's cache; set `MAGPIE_BUN` to override the path. If Bun is
-not available, those tests are reported as skipped.
-
-## License
-
-Plugin source code: MIT (`LICENSE`).
-
-The Hindsight icon is a separate GPL-3.0 asset (`LICENSE-GPL-3.0.txt` and
-`THIRD_PARTY_NOTICES.md`). The plugin is unofficial and is not endorsed by
-Hindsight or Magpie.
-
----
-
-# 中文说明
-
-这是一个**非官方社区插件**，把 Hindsight 接入 Magpie 的 Agents 页。只需在
-Magpie 里勾选模型，插件就会把配置写入 Hindsight 当前账号的 SQLite 设置，
-并在连接期间保持同步；断开时恢复原来的 AI 设置。
-
-## 接管范围
-
-插件会接管：
-
-- AI 对话：`chatMain = "__cloud__"`
-- 日报/周报：`summaryMain = "__cloud__"`
-
-不会接管 OCR、embedding、画面理解等本地能力。
-
-Magpie 当前的 Agent 插件 API 没有 Agent 行内自定义开关，所以 v1 **没有只接管
-对话或只接管总结的开关**。连接即全部接管。`__cloud__` 会让 Hindsight 使用外部
-OpenAI 兼容端点，也就是 Magpie；对话和日报/周报都会消耗 Magpie 或上游的 token。
-Agent 的 `notice` 和本文都会明确提示这一点。
-
-## 安装
-
-推送到公开 GitHub 仓库、添加 `magpie-plugin` topic 后：
-
-```text
-magpie plugin add github:<owner>/<repo>
-```
-
-或安装本地目录：
-
-```text
-magpie plugin add <path-to-checkout>
-```
-
-安装后打开 **Agents → Hindsight**，勾选模型并连接。替换旧轻量版插件后需要
-重新连接一次：没有 `schema: 1` 的旧桥接文件会被视为未连接，不会自动写库。
+数据路径键名是 `data_path`。
 
 ## 模型档案
 
-首次连接会激活第一个勾选模型。插件最多写入 10 份档案，命名为：
+插件最多写入 10 份 Hindsight 外部档案，名称为：
 
 ```text
 Magpie · <model-id>
 ```
 
-Hindsight 的 10 份上限包含用户自己的档案。插件不会删除用户档案；槽位不足时
-会填满可用槽位、仍激活第一个模型，并记录没能保存的模型。
+Hindsight 的 10 份上限包含用户已有档案。插件不会删除用户档案；槽位不足时会填满可用槽位、激活第一个勾选模型，并记录未能保存的模型。
 
-连接后，在 Hindsight 内切换到其他 `Magpie · ...` 档案会被保留。切换到非
-Magpie 端点或模型会被视为漂移，插件会在 2 秒内重新写回受管配置。若要完全
-自己管理这些字段，请先断开。
+连接期间，在 Hindsight 中切换到其他 `Magpie · ...` 档案会保留你的模型选择。切换到非 Magpie 端点或模型会被视为漂移，插件会重新写回 Magpie 配置。
 
-用户改名或编辑过的 Magpie 档案归用户所有，断开时不会删除。
+如果你改名或编辑了插件创建的档案，该档案会被视为用户所有，断开时不再删除。
 
-## 写入与恢复
+## 断开与恢复
 
-插件遵循 Hindsight 自己的数据目录优先级：
-
-1. `HINDSIGHT_DATA_DIR`
-2. `%APPDATA%\Hindsight\bootstrap.json` 的 `data_path`
-3. 平台默认目录
-
-它只操作当前账号的 `hindsight.<uid>.sqlite`，使用 `BEGIN IMMEDIATE`、
-`busy_timeout` 和有限重试，不修改 `settings_store` 之外的数据，也不碰
-`hindsight-memory.*`。
-
-首次写入前会保存原来的：
+首次连接前，插件会备份这些字段：
 
 - `externalEnabled`
 - `externalProvider`
@@ -328,45 +112,189 @@ Magpie 端点或模型会被视为漂移，插件会在 2 秒内重新写回受�
 - `summaryMain`
 - `chatMain`
 
-断开时只恢复仍归插件控制的字段；用户后来改过 endpoint/key，或把
-`summaryMain`/`chatMain` 改成别的值，会保留用户的选择。插件创建的档案只有在
-字段与最后写入指纹完全一致时才会删除。
+断开时只恢复仍由插件控制的值：
 
-状态文件：
+- 活动 endpoint/key/provider 仍指向 Magpie 时，恢复原来的活动字段。
+- `summaryMain` 或 `chatMain` 仍是 `__cloud__` 时，恢复原值。
+- 只删除字段与插件最后一次写入完全一致的档案；用户改名或编辑过的档案保留。
 
-```text
-~/.hindsight/.magpie-agent.state.json
-```
+恢复完成后，后台进程停止读取 Hindsight 数据库和账号标记，只保留桥接文件轮询以等待下一次连接。
 
-其中包含恢复所需的原始 API key 和 gateway key，按当前用户限定权限保存；
-日志不会输出密钥。请不要分享该文件。
+## 账号切换
+
+插件只处理 `active_user.json` 指定的当前账号。账号切换时，先恢复旧账号数据库，再向新账号应用当前 Magpie 选择。状态按 UID 分开保存，避免跨账号覆盖。
 
 ## 常见问题
 
-**设置页没有立刻更新**：Hindsight 前端有设置缓存。下一次对话/总结会从 SQLite
-读取新值，但设置页可能需要刷新或重启 Hindsight 才显示。
+### Hindsight 设置页仍显示旧值
 
-**对话 400，总结正常**：custom provider 可能注入 `chat_template_kwargs`，部分
-上游不接受。把 `chatThinking` 设为 `auto` 或 `off`。
+Hindsight 前端会缓存设置。下一次对话或总结通常已读取数据库中的新值；设置页可能需要刷新或重启 Hindsight 才会重绘。
 
-**总结正常，对话失败**：模型可能不支持 OpenAI tools/function calling，请在
-Magpie 里选择支持工具调用的模型。
+### 对话返回 400，日报/周报正常
 
-**找不到自定义数据目录**：设置 `HINDSIGHT_DATA_DIR`，或在
-`%APPDATA%\Hindsight\bootstrap.json` 写入 `data_path`。桥接文件仍在
-`~/.hindsight`，不随数据目录变化。
+custom provider 可能注入 `chat_template_kwargs`，部分上游不接受该字段。把 Hindsight 的 `chatThinking` 设为 `auto` 或 `off`，或改用支持该字段的上游。
 
-## 开发与许可
+### 日报/周报正常，但对话失败
+
+所选模型可能不支持 OpenAI `tools` / function calling。请在 Magpie 中选择支持工具调用的模型。
+
+### 插件一直提示等待连接
+
+确认 Magpie 已完成连接，并检查 `~/.magpie-agent/hindsight/bridge.json` 是否存在且包含 `schema: 1`。损坏或旧格式的桥接文件不会写库。
+
+### 自定义数据目录找不到
+
+设置 `HINDSIGHT_DATA_DIR`，或在 `%APPDATA%\Hindsight\bootstrap.json` 中写入 `data_path`。桥接和状态文件始终在 `~/.magpie-agent/hindsight`，不会放进 Hindsight 数据目录。
+
+### 存在多个账号数据库
+
+插件只使用 `active_user.json` 指向的账号。如果标记缺失、账号不明确或存在多个候选库，插件会等待而不是猜测。
+
+## 限制
+
+- 只接管 Hindsight 的 AI 对话与日报/周报。
+- 同一时间只处理当前账号。
+- v1 没有 Agent 页面内的范围开关，连接即全部接管。
+- Hindsight 设置结构属于应用内部实现；本版本以 `0.11.4` 为准，未来升级可能需要跟版。
+- 插件无法让不支持 tools 的上游支持 tools，也无法修复上游拒绝 `chat_template_kwargs`。
+- Hindsight UI 可能缓存旧设置，需要刷新或重启。
+
+## 开发
 
 ```text
 npm test
 npm pack --dry-run
 ```
 
-开发测试需要 Node.js 22.5+ 和 Bun。测试只使用临时 HOME/APPDATA 和临时 SQLite
-数据库，不读写真实 Hindsight 库。集成测试会自动查找 PATH 或 Magpie 缓存中的
-Bun，也可用 `MAGPIE_BUN` 指定；找不到 Bun 时集成测试会明确跳过。
+开发测试需要 Node.js 22.5+ 和 Bun。测试只使用临时 HOME/APPDATA 和临时 SQLite 数据库，不读写真实的 `%APPDATA%\Hindsight` 数据库。集成测试会自动查找 PATH 或 Magpie 缓存中的 Bun，也可用 `MAGPIE_BUN` 指定；找不到 Bun 时会明确跳过。
 
-插件代码使用 MIT；Hindsight 官方图标是单独的 GPL-3.0 第三方资产，详见
-`LICENSE-GPL-3.0.txt` 和 `THIRD_PARTY_NOTICES.md`。本插件不是 Hindsight 或
-Magpie 官方作品。
+## 许可
+
+插件源代码使用 MIT 许可，见 [`LICENSE`](./LICENSE)。
+
+Hindsight 官方图标是单独的 GPL-3.0 第三方资产，见 [`LICENSE-GPL-3.0.txt`](./LICENSE-GPL-3.0.txt) 和 [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md)。本插件是社区作品，不代表 Hindsight 或 Magpie 官方。
+
+---
+
+# English
+
+Unofficial community plugin that connects **Hindsight** to Magpie's Agents page. Choose Magpie models once; the plugin writes them into Hindsight's current-account SQLite settings, keeps the configuration in sync, and restores the previous AI settings when disconnected.
+
+> This is not an official Hindsight or Magpie plugin. Hindsight's name and icon are used only to identify compatibility. See [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
+
+## What it manages
+
+| Path | Managed | Value |
+| --- | --- | --- |
+| AI chat | Yes | `chatMain = "__cloud__"` |
+| Daily/weekly summaries | Yes | `summaryMain = "__cloud__"` |
+| OCR, embeddings, local vision | No | Existing local configuration is preserved |
+
+Connecting has no partial mode: it takes over both AI chat and summaries. `__cloud__` routes both through the configured OpenAI-compatible endpoint, which is Magpie while connected, and therefore consumes Magpie or upstream tokens.
+
+## Requirements
+
+- Magpie `0.1.3673`
+- Hindsight `0.11.4`
+- Windows, macOS, or Linux
+- An OpenAI-compatible chat model supported by Hindsight
+- A model with OpenAI `tools` / function-calling support for Hindsight chat
+
+The plugin uses Magpie's bundled Bun runtime and has no npm runtime dependencies.
+
+## Install
+
+```text
+magpie plugin add github:LuM1G/magpie-agent-hindsight
+```
+
+After installing, open **Agents → Hindsight**, tick the models, and connect. Version `0.1.1` uses a new bridge path, so reconnect once after updating.
+
+## Files
+
+Magpie writes the bridge file here:
+
+```text
+~/.magpie-agent/hindsight/bridge.json
+```
+
+The plugin stores its recovery state here:
+
+```text
+~/.magpie-agent/hindsight/state.json
+```
+
+The state file contains the original API key and gateway key needed for restoration. Do not share it. Logs never contain either key. Invalid or damaged bridge files never trigger database writes.
+
+## Hindsight writes
+
+Hindsight stores all settings as JSON in the `settings_store` row with `id = 1`. The plugin:
+
+- Resolves the data root from `HINDSIGHT_DATA_DIR`, then `bootstrap.json.data_path`, then the platform default.
+- Reads `active_user.json` and only targets the current account's `hindsight.<uid>.sqlite`, or `hindsight.sqlite` when there is no UID.
+- Uses `BEGIN IMMEDIATE`, `busy_timeout`, and bounded retries so writes are safe while Hindsight is running.
+- Preserves every Settings field outside the fields it manages.
+- Never reads or writes `hindsight-memory.*.sqlite`.
+
+On Windows, the bootstrap file is `%APPDATA%\Hindsight\bootstrap.json` and the key is `data_path`.
+
+## Profiles
+
+Up to 10 Hindsight external profiles are written as:
+
+```text
+Magpie · <model-id>
+```
+
+Hindsight's limit includes user-created profiles. The plugin never evicts a user profile. If there are not enough free slots, it fills the available slots, activates the first selected model, and logs the models it could not save.
+
+While connected, switching to another `Magpie · ...` profile in Hindsight is preserved. Switching to a non-Magpie endpoint or model is treated as drift and corrected by the plugin.
+
+Renamed or edited plugin profiles become user-owned and are not deleted on disconnect.
+
+## Disconnect and restore
+
+The first connection snapshots `externalEnabled`, `externalProvider`, `endpoint`, `model`, `apiKey`, `summaryMain`, and `chatMain`.
+
+On disconnect:
+
+- Active endpoint/key fields are restored only if they still point at the plugin gateway.
+- `summaryMain` and `chatMain` are restored only if they are still `__cloud__`.
+- Plugin-created profiles are removed only if every field still matches the plugin's last write.
+
+After restoring, the background process stops reading the Hindsight database and account marker. It keeps only the bridge watcher for a later connection.
+
+## Accounts
+
+Only the account named by `active_user.json` is written. On an account switch, the plugin restores the previous account database before applying the current selection to the new account. State is stored per UID.
+
+## Troubleshooting
+
+- **Stale Hindsight settings page:** refresh or restart Hindsight to redraw the UI; the next AI request normally reads the new database values already.
+- **HTTP 400 with summaries working:** set Hindsight `chatThinking` to `auto` or `off`, or use an upstream that accepts `chat_template_kwargs`.
+- **Chat fails while summaries work:** choose a model with OpenAI tools/function-calling support.
+- **Waiting for connection:** verify `~/.magpie-agent/hindsight/bridge.json` exists and contains `schema: 1`.
+- **Custom data directory:** set `HINDSIGHT_DATA_DIR` or `bootstrap.json.data_path`; bridge and state files remain under `~/.magpie-agent/hindsight`.
+- **Multiple account databases:** the plugin waits unless `active_user.json` identifies exactly one current account.
+
+## Limitations
+
+- Only Hindsight AI chat and daily/weekly summaries are managed.
+- Only the current account is active at one time.
+- v1 has no per-agent scope switch; connecting manages everything listed above.
+- Hindsight settings are an application implementation detail; this release targets `0.11.4`.
+- The plugin cannot add tools support to an upstream or make it accept `chat_template_kwargs`.
+- Hindsight's UI may cache stale settings until refreshed or restarted.
+
+## Development
+
+```text
+npm test
+npm pack --dry-run
+```
+
+Development tests require Node.js 22.5+ and Bun. They use temporary HOME/APPDATA trees and temporary SQLite databases, and never read or write the real `%APPDATA%\Hindsight` database. Integration tests auto-detect Bun on `PATH` or in Magpie's cache; set `MAGPIE_BUN` to override. When Bun is unavailable, those tests are reported as skipped.
+
+## License
+
+Plugin source code is MIT (`LICENSE`). The Hindsight icon is a separate GPL-3.0 asset (`LICENSE-GPL-3.0.txt` and `THIRD_PARTY_NOTICES.md`). This is an unofficial community project.

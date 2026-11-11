@@ -43,6 +43,8 @@ test("Windows paths use bootstrap data_path and ignore camelCase dataPath", (t) 
   assert.equal(paths.configRoot, join(appData, "Hindsight"))
   assert.equal(paths.dataRoot, join(home, "custom-data"))
   assert.equal(paths.activeUserPath, join(appData, "Hindsight", "active_user.json"))
+  assert.equal(paths.bridgePath, join(home, ".magpie-agent", "hindsight", "bridge.json"))
+  assert.equal(paths.statePath, join(home, ".magpie-agent", "hindsight", "state.json"))
 
   writeFileSync(bootstrap, JSON.stringify({ dataPath: join(home, "wrong") }))
   const fallback = resolveHindsightPaths({

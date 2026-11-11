@@ -18,6 +18,7 @@ import { fileURLToPath } from "node:url"
 const TEST_DIR = fileURLToPath(new URL(".", import.meta.url))
 const PACKAGE_DIR = fileURLToPath(new URL("..", import.meta.url))
 const RUN_TICKS = join(TEST_DIR, "fixtures", "run-ticks.mjs")
+const LOAD_HOST = join(TEST_DIR, "fixtures", "load-host.mjs")
 
 function isRunnable(command) {
   const result = spawnSync(command, ["--version"], {
@@ -120,7 +121,7 @@ function makeFixture(
   const appData = join(home, "AppData", "Roaming")
   const configRoot = join(appData, "Hindsight")
   const dataRoot = join(root, "data")
-  const bridgeDir = join(home, ".hindsight")
+  const bridgeDir = join(home, ".magpie-agent", "hindsight")
   mkdirSync(configRoot, { recursive: true })
   mkdirSync(dataRoot, { recursive: true })
   mkdirSync(bridgeDir, { recursive: true })
@@ -132,7 +133,7 @@ function makeFixture(
   const dbPath = join(dataRoot, `hindsight.${uid}.sqlite`)
   createDatabase(dbPath, ai)
   if (bridge !== null) {
-    writeFileSync(join(bridgeDir, ".magpie-agent.json"), JSON.stringify(bridge))
+    writeFileSync(join(bridgeDir, "bridge.json"), JSON.stringify(bridge))
   }
   if (useBootstrap) {
     writeFileSync(
@@ -160,8 +161,8 @@ function makeFixture(
     configRoot,
     dataRoot,
     bridgeDir,
-    bridgePath: join(bridgeDir, ".magpie-agent.json"),
-    statePath: join(bridgeDir, ".magpie-agent.state.json"),
+    bridgePath: join(bridgeDir, "bridge.json"),
+    statePath: join(bridgeDir, "state.json"),
     activeUserPath: join(configRoot, "active_user.json"),
     bootstrapPath: join(configRoot, "bootstrap.json"),
     dbPath,
@@ -261,6 +262,26 @@ bunTest("starting without a bridge leaves the database and state untouched", (t)
   runTicks(fixture, 3)
 
   assert.deepEqual(readDatabase(fixture.dbPath), before)
+  assert.equal(existsSync(fixture.statePath), false)
+})
+
+bunTest("Magpie host entry starts in the background and returns immediately", (t) => {
+  const fixture = makeFixture(t, { bridge: null })
+  const result = spawnSync(BUN, [LOAD_HOST], {
+    cwd: PACKAGE_DIR,
+    env: fixture.env,
+    encoding: "utf8",
+    timeout: 5000,
+  })
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`)
+  const line = result.stdout
+    .trim()
+    .split(/\r?\n/)
+    .find((entry) => entry.startsWith("HOST_RESULT="))
+  assert.ok(line, `Missing HOST_RESULT in: ${result.stdout}`)
+  const loaded = JSON.parse(line.slice("HOST_RESULT=".length))
+  assert.ok(loaded.elapsedMs < 1000, `Host load took ${loaded.elapsedMs}ms`)
+  assert.deepEqual(loaded.result, {})
   assert.equal(existsSync(fixture.statePath), false)
 })
 
@@ -392,7 +413,7 @@ bunTest("a new account marker restores the old database before the new one exist
   assert.equal(state.accounts["webdav-not-created-yet"], undefined)
 })
 
-bunTest("old unversioned bridge files are ignored until Magpie reconnects", (t) => {
+bunTest("unversioned bridge files are ignored until Magpie reconnects", (t) => {
   const fixture = makeFixture(t, {
     bridge: {
       models: [{ id: "old/model", name: "Old" }],
@@ -427,7 +448,7 @@ bunTest("a corrupt state file blocks database writes", (t) => {
   assert.deepEqual(readDatabase(fixture.dbPath), before)
 })
 
-bunTest("an old unversioned bridge restores an existing connected account", (t) => {
+bunTest("an unversioned bridge restores an existing connected account", (t) => {
   const fixture = makeFixture(t)
   runTicks(fixture)
   writeFileSync(

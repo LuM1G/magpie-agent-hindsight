@@ -7,13 +7,13 @@ export const agent = {
   id: "hindsight",
   name: "Hindsight",
   icon: "./icon.png",
-  // Magpie writes the selected models and gateway credentials here. This is
-  // deliberately outside Hindsight's data root so HINDSIGHT_DATA_DIR and
-  // bootstrap.json only affect the database the main process locates.
-  config: "~/.hindsight/.magpie-agent.json",
+  // Magpie writes the selected models and gateway credentials here. This path
+  // belongs only to this plugin, so Hindsight's own files and other community
+  // plugins cannot collide with it.
+  config: "~/.magpie-agent/hindsight/bridge.json",
   format: "json",
   notice:
-    "Unofficial community plugin. Connect routes Hindsight AI chat and daily/weekly summaries through Magpie and consumes cloud tokens; disconnect restores the previous AI settings. 非官方社区插件：连接后会让 Hindsight 的 AI 对话、日报和周报走 Magpie 云端并消耗 token；断开时恢复原设置。",
+    "非官方社区插件：连接后会让 Hindsight 的 AI 对话、日报和周报走 Magpie 云端并消耗 token；断开时恢复原设置。Unofficial community plugin. Connect routes Hindsight AI chat and daily/weekly summaries through Magpie and consumes cloud tokens; disconnect restores the previous AI settings.",
 }
 
 export function connect({ gateway, models }) {

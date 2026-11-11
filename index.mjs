@@ -1,15 +1,31 @@
-#!/usr/bin/env bun
 import { HindsightEngine } from "./lib/engine.mjs"
 
-const controller = new AbortController()
-const engine = new HindsightEngine()
+const HOST_KEY = Symbol.for("magpie.hindsight.host.v1")
+const EXIT_HOOK_KEY = Symbol.for("magpie.hindsight.exit.v1")
 
-function stop() {
-  controller.abort()
-  engine.stop()
+export function stopHindsightHost() {
+  const current = globalThis[HOST_KEY]
+  if (!current) return
+  current.controller.abort()
+  current.engine.stop()
+  delete globalThis[HOST_KEY]
 }
 
-process.on("SIGINT", stop)
-process.on("SIGTERM", stop)
+export default async function startHindsightHost() {
+  stopHindsightHost()
 
-await engine.start({ signal: controller.signal })
+  const controller = new AbortController()
+  const engine = new HindsightEngine()
+  globalThis[HOST_KEY] = { controller, engine }
+
+  engine.start({ signal: controller.signal }).catch((error) => {
+    console.error(`[hindsight] host error: ${String(error?.message ?? error)}`)
+  })
+
+  if (!globalThis[EXIT_HOOK_KEY]) {
+    globalThis[EXIT_HOOK_KEY] = true
+    process.once("exit", stopHindsightHost)
+  }
+
+  return {}
+}

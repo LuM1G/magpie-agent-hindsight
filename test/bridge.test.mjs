@@ -51,7 +51,7 @@ test("selectionFrom de-duplicates model ids and preserves order", () => {
   assert.deepEqual(selection.models.map((model) => model.id), ["a", "b"])
 })
 
-test("old unversioned bridge is rejected", () => {
+test("unversioned bridge is rejected", () => {
   const selection = selectionFrom({ ...BASE, schema: undefined })
   assert.equal(selection.schema, null)
   assert.match(validateSelection(selection), /schema/i)
