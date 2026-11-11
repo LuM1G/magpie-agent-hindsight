@@ -18,7 +18,7 @@ Connecting has no partial mode: it takes over both AI chat and summaries. `__clo
 
 ## Requirements
 
-- Magpie `0.1.3673`
+- Magpie `0.1.3681`
 - Hindsight `0.11.4`
 - Windows, macOS, or Linux
 - An OpenAI-compatible chat model supported by Hindsight
@@ -32,7 +32,7 @@ The plugin uses Magpie's bundled Bun runtime and has no npm runtime dependencies
 magpie plugin add github:LuM1G/magpie-agent-hindsight
 ```
 
-After installing, open **Agents → Hindsight**, tick the models, and connect. Version `0.1.1` uses a new bridge path, so reconnect once after updating.
+After installing, open **Agents → Hindsight**, tick the models, and connect. Version `0.1.2` uses a new bridge path, so reconnect once after updating.
 
 ## Files
 

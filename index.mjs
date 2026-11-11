@@ -1,7 +1,11 @@
+import { mkdirSync } from "node:fs"
 import { HindsightEngine } from "./lib/engine.mjs"
+import { bridgePaths } from "./lib/paths.mjs"
 
 const HOST_KEY = Symbol.for("magpie.hindsight.host.v1")
 const EXIT_HOOK_KEY = Symbol.for("magpie.hindsight.exit.v1")
+
+mkdirSync(bridgePaths().bridgeDir, { recursive: true, mode: 0o700 })
 
 export function stopHindsightHost() {
   const current = globalThis[HOST_KEY]

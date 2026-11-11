@@ -7,6 +7,10 @@ export const agent = {
   id: "hindsight",
   name: "Hindsight",
   icon: "./icon.png",
+  // This plugin creates the bridge directory when its host starts. Magpie
+  // uses a non-empty, existing dir to detect connect-only agents whose config
+  // does not exist until the user connects.
+  dir: "~/.magpie-agent/hindsight",
   // Magpie writes the selected models and gateway credentials here. This path
   // belongs only to this plugin, so Hindsight's own files and other community
   // plugins cannot collide with it.

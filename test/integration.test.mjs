@@ -112,6 +112,7 @@ function makeFixture(
     ai = baseAi(),
     bridge = selection(),
     useBootstrap = false,
+    createBridgeDir = true,
   } = {}
 ) {
   const root = mkdtempSync(join(tmpdir(), "magpie-hindsight-integration-"))
@@ -124,7 +125,9 @@ function makeFixture(
   const bridgeDir = join(home, ".magpie-agent", "hindsight")
   mkdirSync(configRoot, { recursive: true })
   mkdirSync(dataRoot, { recursive: true })
-  mkdirSync(bridgeDir, { recursive: true })
+  if (bridge !== null || createBridgeDir) {
+    mkdirSync(bridgeDir, { recursive: true })
+  }
 
   writeFileSync(
     join(configRoot, "active_user.json"),
@@ -266,7 +269,8 @@ bunTest("starting without a bridge leaves the database and state untouched", (t)
 })
 
 bunTest("Magpie host entry starts in the background and returns immediately", (t) => {
-  const fixture = makeFixture(t, { bridge: null })
+  const fixture = makeFixture(t, { bridge: null, createBridgeDir: false })
+  assert.equal(existsSync(fixture.bridgeDir), false)
   const result = spawnSync(BUN, [LOAD_HOST], {
     cwd: PACKAGE_DIR,
     env: fixture.env,
@@ -282,6 +286,7 @@ bunTest("Magpie host entry starts in the background and returns immediately", (t
   const loaded = JSON.parse(line.slice("HOST_RESULT=".length))
   assert.ok(loaded.elapsedMs < 1000, `Host load took ${loaded.elapsedMs}ms`)
   assert.deepEqual(loaded.result, {})
+  assert.equal(existsSync(fixture.bridgeDir), true)
   assert.equal(existsSync(fixture.statePath), false)
 })
 

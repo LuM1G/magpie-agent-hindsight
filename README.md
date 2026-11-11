@@ -20,7 +20,7 @@
 
 ## 要求
 
-- Magpie `0.1.3673`
+- Magpie `0.1.3681`
 - Hindsight `0.11.4`
 - Windows、macOS 或 Linux
 - 所选模型支持 Hindsight 使用的 OpenAI 兼容聊天接口
@@ -34,7 +34,7 @@
 magpie plugin add github:LuM1G/magpie-agent-hindsight
 ```
 
-安装后打开 **Agents → Hindsight**，勾选模型并连接。`0.1.1` 使用新的桥接路径，首次更新后需要重新连接一次。
+安装后打开 **Agents → Hindsight**，勾选模型并连接。`0.1.2` 使用新的桥接路径，首次更新后需要重新连接一次。
 
 ## 桥接与状态文件
 

@@ -10,6 +10,7 @@ const PACKAGE_DIR = fileURLToPath(new URL("..", import.meta.url))
 test("agent declaration exposes the expected bridge and icon", () => {
   assert.equal(agent.id, "hindsight")
   assert.equal(agent.name, "Hindsight")
+  assert.equal(agent.dir, "~/.magpie-agent/hindsight")
   assert.equal(agent.config, "~/.magpie-agent/hindsight/bridge.json")
   assert.equal(agent.icon, "./icon.png")
   assert.equal(agent.format, "json")
@@ -41,7 +42,7 @@ test("connect writes schema 1, dotted gateway fields and de-duplicated models", 
 
 test("package metadata points Magpie and Bun at the right entry points", () => {
   const pkg = JSON.parse(readFileSync(join(PACKAGE_DIR, "package.json"), "utf8"))
-  assert.equal(pkg.version, "0.1.1")
+  assert.equal(pkg.version, "0.1.2")
   assert.match(pkg.description, /^非官方社区插件/)
   assert.deepEqual(Object.keys(pkg.magpie.summary), ["zh", "en"])
   assert.ok(pkg.magpie.summary.zh.length > 0)
