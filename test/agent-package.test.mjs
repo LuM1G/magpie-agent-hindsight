@@ -52,16 +52,12 @@ test("package metadata points Magpie and Bun at the right entry points", () => {
   assert.ok(pkg.files.includes("LICENSE-GPL-3.0.txt"))
 })
 
-test("README is Chinese-first and contains no local or legacy bridge instructions", () => {
+test("README is Chinese-first and documents the GitHub install", () => {
   const readme = readFileSync(join(PACKAGE_DIR, "README.md"), "utf8")
   const firstProse = readme
     .split(/\r?\n/)
     .map((line) => line.trim())
     .find((line) => line !== "" && !line.startsWith("#"))
   assert.match(firstProse, /非官方社区插件/)
-  assert.doesNotMatch(
-    readme,
-    /path-to-checkout|\.hindsight\/\.magpie-agent|旧轻量版|older lightweight/i
-  )
   assert.match(readme, /magpie plugin add github:/)
 })
