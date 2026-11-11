@@ -33,3 +33,13 @@ export default async function startHindsightHost() {
 
   return {}
 }
+
+// Magpie may import the package entry without calling its default export.
+// Starting on import keeps the SQLite bridge alive in that case while still
+// returning immediately, so the host does not hit its load timeout.
+setTimeout(() => {
+  if (globalThis[HOST_KEY]) return
+  startHindsightHost().catch((error) => {
+    console.error(`[hindsight] host error: ${String(error?.message ?? error)}`)
+  })
+}, 0)

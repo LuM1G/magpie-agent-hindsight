@@ -268,7 +268,7 @@ bunTest("starting without a bridge leaves the database and state untouched", (t)
   assert.equal(existsSync(fixture.statePath), false)
 })
 
-bunTest("Magpie host entry starts in the background and returns immediately", (t) => {
+bunTest("importing the Magpie host entry starts in the background and returns immediately", (t) => {
   const fixture = makeFixture(t, { bridge: null, createBridgeDir: false })
   assert.equal(existsSync(fixture.bridgeDir), false)
   const result = spawnSync(BUN, [LOAD_HOST], {
@@ -285,9 +285,37 @@ bunTest("Magpie host entry starts in the background and returns immediately", (t
   assert.ok(line, `Missing HOST_RESULT in: ${result.stdout}`)
   const loaded = JSON.parse(line.slice("HOST_RESULT=".length))
   assert.ok(loaded.elapsedMs < 1000, `Host load took ${loaded.elapsedMs}ms`)
-  assert.deepEqual(loaded.result, {})
+  assert.equal(loaded.stateReady, false)
   assert.equal(existsSync(fixture.bridgeDir), true)
   assert.equal(existsSync(fixture.statePath), false)
+})
+
+bunTest("importing the Magpie host entry alone applies a waiting bridge", (t) => {
+  const fixture = makeFixture(t)
+  const result = spawnSync(BUN, [LOAD_HOST], {
+    cwd: PACKAGE_DIR,
+    env: { ...fixture.env, MAGPIE_TEST_STATE_WAIT_MS: "4000" },
+    encoding: "utf8",
+    timeout: 8000,
+  })
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`)
+  const line = result.stdout
+    .trim()
+    .split(/\r?\n/)
+    .find((entry) => entry.startsWith("HOST_RESULT="))
+  assert.ok(line, `Missing HOST_RESULT in: ${result.stdout}`)
+  const loaded = JSON.parse(line.slice("HOST_RESULT=".length))
+  assert.ok(loaded.elapsedMs < 1000, `Host load took ${loaded.elapsedMs}ms`)
+  assert.equal(loaded.stateReady, true)
+
+  const settings = readDatabase(fixture.dbPath)
+  assert.equal(settings.ai.endpoint, "http://127.0.0.1:3425/v1")
+  assert.equal(settings.ai.summaryMain, "__cloud__")
+  assert.equal(settings.ai.chatMain, "__cloud__")
+  assert.equal(
+    JSON.parse(readFileSync(fixture.statePath, "utf8")).accounts["webdav-test"].connected,
+    true
+  )
 })
 
 bunTest("a model switch made in Hindsight is preserved on the next tick", (t) => {

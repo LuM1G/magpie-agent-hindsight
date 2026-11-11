@@ -20,7 +20,7 @@
 
 ## 要求
 
-- Magpie `0.1.3681`
+- Magpie `0.1.3697`
 - Hindsight `0.11.4`
 - Windows、macOS 或 Linux
 - 所选模型支持 Hindsight 使用的 OpenAI 兼容聊天接口
@@ -34,7 +34,7 @@
 magpie plugin add github:LuM1G/magpie-agent-hindsight
 ```
 
-安装后打开 **Agents → Hindsight**，勾选模型并连接。`0.1.2` 使用新的桥接路径，首次更新后需要重新连接一次。
+安装后打开 **Agents → Hindsight**，勾选模型并连接。`0.1.3` 会在插件后台进程加载时立即开始同步；更新后重启一次 Magpie，让托管进程重新加载。桥接路径与 `0.1.2` 相同，已连接时无需重新勾选模型。
 
 ## 桥接与状态文件
 
@@ -131,6 +131,18 @@ Hindsight 的 10 份上限包含用户已有档案。插件不会删除用户档
 ### Hindsight 设置页仍显示旧值
 
 Hindsight 前端会缓存设置。下一次对话或总结通常已读取数据库中的新值；设置页可能需要刷新或重启 Hindsight 才会重绘。
+
+### 已连接，但 Hindsight 没有出现云端 API 界面
+
+先完全退出 Hindsight（包括托盘图标）再重新打开，而不只是切换设置页。Hindsight 会在启动时读取 SQLite 设置；只运行中的窗口可能一直保留连接前的界面。
+
+然后确认：
+
+- `~/.magpie-agent/hindsight/bridge.json` 存在且包含 `schema: 1`。
+- `~/.magpie-agent/hindsight/state.json` 存在，当前账号的 `connected` 为 `true`。
+- Hindsight 设置中的 `endpoint` 不是空值，并且 `externalProfiles` 中有 `Magpie · ...` 档案。
+
+如果 `bridge.json` 已存在但 `state.json` 不存在，重启一次 Magpie，让插件后台进程重新加载；必要时在 Agents 页断开再连接。后台通常会在 2 秒内完成第一次同步。
 
 ### 对话返回 400，日报/周报正常
 

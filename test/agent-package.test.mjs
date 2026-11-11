@@ -42,7 +42,7 @@ test("connect writes schema 1, dotted gateway fields and de-duplicated models", 
 
 test("package metadata points Magpie and Bun at the right entry points", () => {
   const pkg = JSON.parse(readFileSync(join(PACKAGE_DIR, "package.json"), "utf8"))
-  assert.equal(pkg.version, "0.1.2")
+  assert.equal(pkg.version, "0.1.3")
   assert.match(pkg.description, /^非官方社区插件/)
   assert.deepEqual(Object.keys(pkg.magpie.summary), ["zh", "en"])
   assert.ok(pkg.magpie.summary.zh.length > 0)

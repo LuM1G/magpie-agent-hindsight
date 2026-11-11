@@ -18,7 +18,7 @@ Connecting has no partial mode: it takes over both AI chat and summaries. `__clo
 
 ## Requirements
 
-- Magpie `0.1.3681`
+- Magpie `0.1.3697`
 - Hindsight `0.11.4`
 - Windows, macOS, or Linux
 - An OpenAI-compatible chat model supported by Hindsight
@@ -32,7 +32,7 @@ The plugin uses Magpie's bundled Bun runtime and has no npm runtime dependencies
 magpie plugin add github:LuM1G/magpie-agent-hindsight
 ```
 
-After installing, open **Agents → Hindsight**, tick the models, and connect. Version `0.1.2` uses a new bridge path, so reconnect once after updating.
+After installing, open **Agents → Hindsight**, tick the models, and connect. Version `0.1.3` starts syncing as soon as the plugin host loads; restart Magpie once after updating so the host is recreated. The bridge path is unchanged from `0.1.2`, so an existing connection does not need to be selected again.
 
 ## Files
 
@@ -95,6 +95,7 @@ Only the account named by `active_user.json` is written. On an account switch, t
 ## Troubleshooting
 
 - **Stale Hindsight settings page:** refresh or restart Hindsight to redraw the UI; the next AI request normally reads the new database values already.
+- **Connected, but Hindsight still has no cloud-API screen:** fully quit Hindsight, including its tray process, and reopen it. Hindsight reads SQLite at startup, so an already-running window can keep the pre-connection screen. Verify that `~/.magpie-agent/hindsight/bridge.json` has `schema: 1`, `~/.magpie-agent/hindsight/state.json` marks the current account as connected, and the Hindsight `endpoint` is non-empty with `Magpie · ...` profiles. If the bridge exists but state does not, restart Magpie so the plugin host reloads, then reconnect from the Agents page if needed. The first sync normally completes within 2 seconds.
 - **HTTP 400 with summaries working:** set Hindsight `chatThinking` to `auto` or `off`, or use an upstream that accepts `chat_template_kwargs`.
 - **Chat fails while summaries work:** choose a model with OpenAI tools/function-calling support.
 - **Waiting for connection:** verify `~/.magpie-agent/hindsight/bridge.json` exists and contains `schema: 1`.
