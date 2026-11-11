@@ -1,0 +1,11 @@
+node_modules/
+coverage/
+*.tgz
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Local bridge/state files must never be committed.
+.magpie-agent.json
+.magpie-agent.state.json

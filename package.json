@@ -1,0 +1,31 @@
+{
+  "name": "magpie-agent-hindsight",
+  "version": "0.1.0",
+  "description": "Unofficial community agent plugin that connects Hindsight AI chat and daily/weekly summaries to Magpie",
+  "type": "module",
+  "main": "./index.mjs",
+  "files": [
+    "hindsight.agent.js",
+    "index.mjs",
+    "lib",
+    "icon.png",
+    "README.md",
+    "LICENSE",
+    "LICENSE-GPL-3.0.txt",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "keywords": [
+    "magpie",
+    "magpie-agent",
+    "hindsight",
+    "llm-gateway",
+    "openai-compatible"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "test": "node --experimental-sqlite --test test/agent-package.test.mjs test/bridge.test.mjs test/integration.test.mjs test/paths-state.test.mjs test/settings.test.mjs"
+  },
+  "magpie": {
+    "agent": "./hindsight.agent.js"
+  }
+}
