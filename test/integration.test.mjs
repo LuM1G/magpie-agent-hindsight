@@ -14,6 +14,7 @@ import {
 import { join } from "node:path"
 import { homedir, tmpdir } from "node:os"
 import { fileURLToPath } from "node:url"
+import { stateBackupPath } from "../lib/state-store.mjs"
 
 const TEST_DIR = fileURLToPath(new URL(".", import.meta.url))
 const PACKAGE_DIR = fileURLToPath(new URL("..", import.meta.url))
@@ -471,13 +472,28 @@ bunTest("a corrupt bridge stops writes instead of guessing a disconnect", (t) =>
   assert.equal(state.accounts["webdav-test"].connected, true)
 })
 
-bunTest("a corrupt state file blocks database writes", (t) => {
+bunTest("a corrupt primary state file recovers from its backup", (t) => {
+  const fixture = makeFixture(t)
+  runTicks(fixture)
+  writeFileSync(fixture.statePath, "{")
+  writeFileSync(fixture.bridgePath, JSON.stringify(selection("new-key")))
+  runTicks(fixture, 2)
+
+  assert.equal(readDatabase(fixture.dbPath).ai.apiKey, "new-key")
+  const state = JSON.parse(readFileSync(fixture.statePath, "utf8"))
+  assert.equal(state.accounts["webdav-test"].connected, true)
+  assert.equal(state.accounts["webdav-test"].lastApplied.apiKey, "new-key")
+})
+
+bunTest("a corrupt primary state file and backup block database writes", (t) => {
   const fixture = makeFixture(t)
   runTicks(fixture)
   const before = readDatabase(fixture.dbPath)
   writeFileSync(fixture.statePath, "{")
+  writeFileSync(stateBackupPath(fixture.statePath), "{")
   writeFileSync(fixture.bridgePath, JSON.stringify(selection("new-key")))
   runTicks(fixture, 2)
+
   assert.deepEqual(readDatabase(fixture.dbPath), before)
 })
 

@@ -46,9 +46,10 @@ The plugin stores its recovery state here:
 
 ```text
 ~/.magpie-agent/hindsight/state.json
+~/.magpie-agent/hindsight/state.json.bak
 ```
 
-The state file contains the original API key and gateway key needed for restoration. Do not share it. Logs never contain either key. Invalid or damaged bridge files never trigger database writes.
+After each successful primary write, the plugin also writes a `state.json.bak` backup; if the backup write fails, the primary state remains valid and syncing continues. If the primary file is missing or cannot be parsed, it recovers from the backup and repairs the primary. Both files contain the original API key and gateway key needed for restoration, so do not share either. Logs never contain these keys. If neither state file can be parsed, the plugin stops database writes and logs the error instead of continuing without recovery data. Invalid or damaged bridge files never trigger database writes.
 
 ## Hindsight writes
 
@@ -95,7 +96,7 @@ Only the account named by `active_user.json` is written. On an account switch, t
 ## Troubleshooting
 
 - **Stale Hindsight settings page:** refresh or restart Hindsight to redraw the UI; the next AI request normally reads the new database values already.
-- **Connected, but Hindsight still has no cloud-API screen:** fully quit Hindsight, including its tray process, and reopen it. Hindsight reads SQLite at startup, so an already-running window can keep the pre-connection screen. Verify that `~/.magpie-agent/hindsight/bridge.json` has `schema: 1`, `~/.magpie-agent/hindsight/state.json` marks the current account as connected, and the Hindsight `endpoint` is non-empty with `Magpie · ...` profiles. If the bridge exists but state does not, restart Magpie so the plugin host reloads, then reconnect from the Agents page if needed. The first sync normally completes within 2 seconds.
+- **Connected, but Hindsight still has no cloud-API screen:** fully quit Hindsight, including its tray process, and reopen it. Hindsight reads SQLite at startup, so an already-running window can keep the pre-connection screen. Verify that `~/.magpie-agent/hindsight/bridge.json` has `schema: 1`, `~/.magpie-agent/hindsight/state.json` marks the current account as connected, and the Hindsight `endpoint` is non-empty with `Magpie · ...` profiles. If the bridge exists but state does not, the plugin tries `state.json.bak` first; if neither exists, it treats the connection as new. You can also restart Magpie so the plugin host reloads, then reconnect from the Agents page if needed. The first sync normally completes within 2 seconds.
 - **HTTP 400 with summaries working:** set Hindsight `chatThinking` to `auto` or `off`, or use an upstream that accepts `chat_template_kwargs`.
 - **Chat fails while summaries work:** choose a model with OpenAI tools/function-calling support.
 - **Waiting for connection:** verify `~/.magpie-agent/hindsight/bridge.json` exists and contains `schema: 1`.

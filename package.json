@@ -1,6 +1,6 @@
 {
   "name": "magpie-agent-hindsight",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "非官方社区插件：把 Hindsight 的 AI 对话与日报/周报接入 Magpie。",
   "type": "module",
   "main": "./index.mjs",
@@ -22,7 +22,7 @@
   ],
   "license": "MIT",
   "scripts": {
-    "test": "node --experimental-sqlite --test test/agent-package.test.mjs test/bridge.test.mjs test/integration.test.mjs test/paths-state.test.mjs test/settings.test.mjs"
+    "test": "node --experimental-sqlite --test test/agent-package.test.mjs test/bridge.test.mjs test/integration.test.mjs test/paths-state.test.mjs test/settings.test.mjs test/state-store.test.mjs"
   },
   "magpie": {
     "name": "Hindsight",
