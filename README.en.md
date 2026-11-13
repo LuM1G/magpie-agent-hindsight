@@ -4,7 +4,7 @@
 
 Unofficial community plugin that connects **Hindsight** to Magpie's Agents page. Choose Magpie models once; the plugin writes them into Hindsight's current-account SQLite settings, keeps the configuration in sync, and restores the previous AI settings when disconnected.
 
-> This is not an official Hindsight or Magpie plugin. Hindsight's name and icon are used only to identify compatibility. See [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
+> This is not an official Hindsight or Magpie plugin. Hindsight's name is used only to identify compatibility; the plugin icon is an original design.
 
 ## What it manages
 
@@ -32,7 +32,7 @@ The plugin uses Magpie's bundled Bun runtime and has no npm runtime dependencies
 magpie plugin add github:LuM1G/magpie-agent-hindsight
 ```
 
-After installing, open **Agents → Hindsight**, tick the models, and connect. Version `0.1.3` starts syncing as soon as the plugin host loads; restart Magpie once after updating so the host is recreated. The bridge path is unchanged from `0.1.2`, so an existing connection does not need to be selected again.
+After installing, open **Agents → Hindsight**, tick the models, and connect. Since `0.1.3`, the plugin starts syncing as soon as the plugin host loads; restart Magpie once after updating so the host is recreated. The bridge path is unchanged from `0.1.2`, so an existing connection does not need to be selected again.
 
 ## Files
 
@@ -122,4 +122,4 @@ Development tests require Node.js 22.5+ and Bun. They use temporary HOME/APPDATA
 
 ## License
 
-Plugin source code is MIT (`LICENSE`). The Hindsight icon is a separate GPL-3.0 asset (`LICENSE-GPL-3.0.txt` and `THIRD_PARTY_NOTICES.md`). This is an unofficial community project.
+Plugin source code and icon are MIT (`LICENSE`). This is an unofficial community project.

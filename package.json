@@ -1,6 +1,6 @@
 {
   "name": "magpie-agent-hindsight",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "非官方社区插件：把 Hindsight 的 AI 对话与日报/周报接入 Magpie。",
   "type": "module",
   "main": "./index.mjs",
@@ -11,9 +11,7 @@
     "icon.png",
     "README.md",
     "README.en.md",
-    "LICENSE",
-    "LICENSE-GPL-3.0.txt",
-    "THIRD_PARTY_NOTICES.md"
+    "LICENSE"
   ],
   "keywords": [
     "magpie",
@@ -28,6 +26,7 @@
   },
   "magpie": {
     "name": "Hindsight",
+    "icon": "data:image/png;base64,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",
     "summary": {
       "zh": "非官方社区插件：在 Magpie 中统一管理 Hindsight 的 AI 对话与日报/周报模型，并支持最多 10 份 Hindsight 模型档案。",
       "en": "Unofficial community plugin that manages Hindsight AI chat and daily/weekly summary models through Magpie, with up to 10 Hindsight profiles."

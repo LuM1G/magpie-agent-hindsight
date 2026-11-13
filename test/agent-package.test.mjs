@@ -7,12 +7,12 @@ import { agent, connect } from "../hindsight.agent.js"
 
 const PACKAGE_DIR = fileURLToPath(new URL("..", import.meta.url))
 
-test("agent declaration exposes the expected bridge and icon", () => {
+test("agent declaration exposes the expected bridge", () => {
   assert.equal(agent.id, "hindsight")
   assert.equal(agent.name, "Hindsight")
   assert.equal(agent.dir, "~/.magpie-agent/hindsight")
   assert.equal(agent.config, "~/.magpie-agent/hindsight/bridge.json")
-  assert.equal(agent.icon, "./icon.png")
+  assert.equal(agent.icon, undefined)
   assert.equal(agent.format, "json")
   assert.match(agent.notice, /^非官方社区插件/)
   assert.match(agent.notice, /cloud tokens|消耗 token/i)
@@ -42,16 +42,21 @@ test("connect writes schema 1, dotted gateway fields and de-duplicated models", 
 
 test("package metadata points Magpie and Bun at the right entry points", () => {
   const pkg = JSON.parse(readFileSync(join(PACKAGE_DIR, "package.json"), "utf8"))
-  assert.equal(pkg.version, "0.1.3")
+  assert.equal(pkg.version, "0.1.4")
   assert.match(pkg.description, /^非官方社区插件/)
   assert.deepEqual(Object.keys(pkg.magpie.summary), ["zh", "en"])
   assert.ok(pkg.magpie.summary.zh.length > 0)
   assert.ok(pkg.magpie.summary.en.length > 0)
   assert.equal(pkg.main, "./index.mjs")
   assert.equal(pkg.magpie.agent, "./hindsight.agent.js")
+  assert.match(pkg.magpie.icon, /^data:image\/png;base64,/)
+  const iconData = Buffer.from(pkg.magpie.icon.split(",", 2)[1], "base64")
+  assert.equal(iconData.subarray(0, 8).toString("hex"), "89504e470d0a1a0a")
+  assert.ok(iconData.length > 0 && iconData.length <= 1024 * 1024)
   assert.ok(pkg.files.includes("icon.png"))
   assert.ok(pkg.files.includes("README.en.md"))
-  assert.ok(pkg.files.includes("LICENSE-GPL-3.0.txt"))
+  assert.ok(!pkg.files.includes("LICENSE-GPL-3.0.txt"))
+  assert.ok(!pkg.files.includes("THIRD_PARTY_NOTICES.md"))
 })
 
 test("README language files are split and cross-linked", () => {
